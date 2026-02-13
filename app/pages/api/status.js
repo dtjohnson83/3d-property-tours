@@ -1,28 +1,5 @@
-import https from 'https';
-
-const WORLDLABS_API_KEY = process.env.WORLDLABS_API_KEY;
-
-function apiRequest(path) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'api.worldlabs.ai',
-      path: `/v0${path}`,
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${WORLDLABS_API_KEY}` }
-    };
-
-    const req = https.request(options, (res) => {
-      let body = '';
-      res.on('data', d => body += d);
-      res.on('end', () => {
-        try { resolve(JSON.parse(body)); }
-        catch { resolve({ raw: body }); }
-      });
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
+const API_KEY = process.env.WORLDLABS_API_KEY;
+const API_BASE = 'https://api.worldlabs.ai/marble/v1';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -35,8 +12,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await apiRequest(`/operations/${operationId}`);
-    res.status(200).json(result);
+    const response = await fetch(`${API_BASE}/operations/${operationId}`, {
+      headers: {
+        'WLT-Api-Key': API_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: JSON.stringify(data) });
+    }
+    res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
