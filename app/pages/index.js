@@ -627,36 +627,17 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 3D Viewer */}
-            <div className="viewer-container" ref={viewerRef}>
-              <div className={`viewer-loading ${iframeLoaded ? 'hidden' : ''}`}>
-                <div className="spinner" />
-                <p style={{ color: '#888', fontSize: '0.9rem' }}>Loading 3D world...</p>
+            {/* 3D Viewer Link */}
+            <div className="viewer-container" ref={viewerRef} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => window.open(result.viewUrl, '_blank')}>
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🌍</div>
+                <p style={{ color: '#667eea', fontSize: '1.1rem', fontWeight: 600 }}>Tap to View Your 3D World</p>
+                <p style={{ color: '#666', fontSize: '0.85rem', marginTop: '8px' }}>Opens in World Labs viewer</p>
               </div>
-
-              <iframe
-                src={result.viewUrl}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                allowFullScreen
-                onLoad={() => setIframeLoaded(true)}
-                title="3D Property Tour"
-              />
-
-              {/* Snapshot flash effect */}
-              {snapshotFlash && <div className="snapshot-flash" />}
-
-              {/* Snapshot button overlay */}
-              <button
-                className="snapshot-btn"
-                onClick={takeSnapshot}
-                title="Take Snapshot"
-              >
-                📸
-              </button>
             </div>
 
             <div className="viewer-hint">
-              💡 Use the viewer above to explore — drag to rotate the camera, pinch or scroll to zoom in/out
+              💡 Your 3D world opens in the World Labs viewer — drag to rotate, pinch to zoom
             </div>
 
             {/* Toolbar */}
