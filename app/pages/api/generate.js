@@ -18,7 +18,7 @@ async function apiFetch(path, options = {}) {
 }
 
 export const config = {
-  api: { bodyParser: { sizeLimit: '50mb' } }
+  api: { bodyParser: { sizeLimit: '100mb' } }
 };
 
 export default async function handler(req, res) {
@@ -31,38 +31,77 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { images, name, mode } = req.body;
+    const { images, name, mode, inputType, layoutMode, video, panorama } = req.body;
     const model = mode === 'draft' ? 'Marble 0.1-mini' : 'Marble 0.1-plus';
-
-    if (!images || images.length === 0) {
-      return res.status(400).json({ error: 'No images provided' });
-    }
 
     let worldPrompt;
 
-    if (images.length === 1) {
-      // Single image — send base64 directly
-      const base64 = images[0].data.split(',')[1];
+    if (inputType === 'video') {
+      // Video prompt
+      if (!video || !video.data) {
+        return res.status(400).json({ error: 'No video data provided' });
+      }
+      const base64 = video.data.split(',')[1] || video.data;
       worldPrompt = {
-        type: 'image',
-        image_prompt: {
+        type: 'video',
+        video_prompt: {
+          source: 'data_base64',
+          data_base64: base64,
+        },
+      };
+    } else if (inputType === 'panorama') {
+      // Panorama prompt
+      if (!panorama || !panorama.data) {
+        return res.status(400).json({ error: 'No panorama data provided' });
+      }
+      const base64 = panorama.data.split(',')[1] || panorama.data;
+      worldPrompt = {
+        type: 'panorama',
+        panorama_prompt: {
           source: 'data_base64',
           data_base64: base64,
         },
       };
     } else {
-      // Multiple images with azimuth
-      const angleStep = 360 / images.length;
-      worldPrompt = {
-        type: 'multi-image',
-        multi_image_prompt: images.map((img, i) => ({
-          azimuth: Math.round(i * angleStep),
-          content: {
+      // Image-based prompts
+      if (!images || images.length === 0) {
+        return res.status(400).json({ error: 'No images provided' });
+      }
+
+      if (images.length === 1) {
+        const base64 = images[0].data.split(',')[1];
+        worldPrompt = {
+          type: 'image',
+          image_prompt: {
             source: 'data_base64',
-            data_base64: img.data.split(',')[1],
+            data_base64: base64,
           },
-        })),
-      };
+        };
+      } else if (layoutMode === 'auto') {
+        // Auto Layout — no azimuth, API auto-determines positioning
+        worldPrompt = {
+          type: 'multi-image',
+          multi_image_prompt: images.map((img) => ({
+            content: {
+              source: 'data_base64',
+              data_base64: img.data.split(',')[1],
+            },
+          })),
+        };
+      } else {
+        // Direction Control — with azimuth
+        const directions = { front: 0, right: 90, back: 180, left: 270 };
+        worldPrompt = {
+          type: 'multi-image',
+          multi_image_prompt: images.map((img) => ({
+            azimuth: img.direction ? directions[img.direction] : 0,
+            content: {
+              source: 'data_base64',
+              data_base64: img.data.split(',')[1],
+            },
+          })),
+        };
+      }
     }
 
     const result = await apiFetch('worlds:generate', {
