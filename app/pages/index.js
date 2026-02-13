@@ -95,8 +95,14 @@ export default function Home() {
         })
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Generation failed');
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        const text = await response.text();
+        throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+      }
+      if (!response.ok) throw new Error(data.error + (data.details ? ' - ' + JSON.stringify(data.details) : '') || 'Generation failed');
 
       const operationId = data.operationId;
       let completed = false;
@@ -126,7 +132,8 @@ export default function Home() {
       }
 
     } catch (err) {
-      setError(err.message);
+      console.error('Generate error:', err);
+      setError(err.message || JSON.stringify(err));
       setStep(STEPS.ERROR);
     }
   };
