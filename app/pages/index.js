@@ -95,14 +95,14 @@ export default function Home() {
         })
       });
 
+      const responseText = await response.text();
       let data;
       try {
-        data = await response.json();
+        data = JSON.parse(responseText);
       } catch (parseErr) {
-        const text = await response.text();
-        throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+        throw new Error(`Server error (${response.status}): ${responseText.substring(0, 200)}`);
       }
-      if (!response.ok) throw new Error(data.error + (data.details ? ' - ' + JSON.stringify(data.details) : '') || 'Generation failed');
+      if (!response.ok) throw new Error((data.error || 'Generation failed') + (data.details ? ' - ' + JSON.stringify(data.details) : ''));
 
       const operationId = data.operationId;
       let completed = false;
