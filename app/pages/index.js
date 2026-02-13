@@ -125,13 +125,21 @@ export default function Home() {
           }
           completed = true;
           const worldId = statusData.response?.world_id || statusData.response?.id;
+          // Fetch world details to get the correct view URL
+          let viewUrl = `https://platform.worldlabs.ai/worlds/${worldId}`;
+          try {
+            const worldRes = await fetch(`/api/world?worldId=${worldId}`);
+            if (worldRes.ok) {
+              const worldData = await worldRes.json();
+              viewUrl = worldData.world_marble_url || viewUrl;
+            }
+          } catch (e) { console.error('Failed to fetch world details', e); }
           setResult({
             worldId,
-            viewUrl: `https://platform.worldlabs.ai/worlds/${worldId}`,
+            viewUrl,
             name: name || 'Property Tour'
           });
           setStep(STEPS.DONE);
-          setIframeLoaded(false);
         } else {
           setProgress(statusData.metadata?.progress_pct || progress + 5);
         }
