@@ -22,25 +22,31 @@ export default function Home() {
   const fileInputRef = useRef(null);
   const viewerRef = useRef(null);
 
-  const handleFiles = (e) => {
-    const files = Array.from(e.target.files);
-    const newImages = [];
-
-    files.forEach(file => {
+  const resizeImage = (file, maxWidth = 1024, quality = 0.7) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        newImages.push({
-          name: file.name,
-          type: file.type,
-          data: ev.target.result,
-          preview: ev.target.result
-        });
-        if (newImages.length === files.length) {
-          setImages(prev => [...prev, ...newImages]);
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth; }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', quality);
+          resolve({ name: file.name, type: 'image/jpeg', data, preview: data });
+        };
+        img.src = ev.target.result;
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const handleFiles = async (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = await Promise.all(files.map(f => resizeImage(f)));
+    setImages(prev => [...prev, ...newImages]);
   };
 
   const removeImage = (index) => {
